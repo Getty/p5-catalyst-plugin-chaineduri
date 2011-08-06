@@ -57,8 +57,8 @@ sub u {
   sub base :Chained('/') :PathPart('') :CaptureArgs(1) :StashArg('language') {
     my ( $c, $language ) = @_;
     ...
-	$c->stash->{language} = $language;
-	...
+    $c->stash->{language} = $language;
+    ...
   }
   
   sub othercapture :Chained('base') :PathPart('') :CaptureArgs(1) { ... }
