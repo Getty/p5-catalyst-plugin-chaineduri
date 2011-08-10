@@ -3,7 +3,7 @@ package Catalyst::Plugin::ChainedURI;
 use strict;
 use warnings;
 
-sub u {
+sub chained_uri {
 	my ( $c, $controller, $action_for, @ca ) = @_;
 	my $control = $c->controller($controller);
 
@@ -66,7 +66,11 @@ sub u {
   
   # Somewhere
 
-  my $uri = $c->u('Root','final',$othercapture_capturearg,$final_arg);
+  my $uri = $c->chained_uri('Root','final',$othercapture_capturearg,$final_arg);
+
+  # Usage hints
+  
+  $c->stash->{u} = sub { $c->chained_uri(@_) }; # for getting [% u(...) %]
 
 =head1 DESCRIPTION
 
