@@ -16,9 +16,7 @@ sub chained_uri {
 	die "Catalyst::Plugin::ChainedURI needs Chained action as target (given: ".$controller."->".$action_for.")" if !$action->attributes->{Chained};
 	die "Catalyst::Plugin::ChainedURI needs the end of the chain as target (given: ".$controller."->".$action_for.")" if $action->attributes->{CaptureArgs};
 	
-	if ($c->log->is_debug) {
-		$c->log->debug('ChainedURI '.$controller.'->'.$action_for.' '.join(',',@ca));
-	}
+	$c->log->debug('ChainedURI '.$controller.'->'.$action_for.' '.join(',',@ca)) if ($c->debug);
 
 	my @captures;
 	my $curr = $action;
@@ -46,7 +44,7 @@ sub chained_uri {
 	}
 	
 	@captures = reverse @captures;
-
+	
 	return $c->uri_for_action($action,\@captures,@ca);
 }
 
