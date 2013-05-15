@@ -1,8 +1,0 @@
-Revision history for {{$dist->name}}
-
-{{$NEXT}}
-
-0.002     2011-08-10 21:53:11 Europe/Berlin
-	- Change of API function, adding hint for shortkey in template (t0m++)
-
-0.001     2011-08-06 22:53:40 Europe/Berlin
