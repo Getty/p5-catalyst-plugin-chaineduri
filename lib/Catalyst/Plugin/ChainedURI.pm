@@ -102,6 +102,7 @@ sub current_chained_uri {
 
 	my $uri = $c->chained_uri('Root','final',$othercapture_capturearg,$final_arg);
 	my @current_chained_uri = $c->current_chained_uri; # current list
+	my $new_url = $c->chained_uri($c->current_chained_uri,{ more => 'params' });
 
 	# Usage hints
 	
