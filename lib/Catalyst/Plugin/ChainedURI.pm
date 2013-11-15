@@ -2,19 +2,19 @@ package Catalyst::Plugin::ChainedURI;
 # ABSTRACT: Simple way to get an URL to an action from chained catalyst controller
 use strict;
 use warnings;
+use Carp qw( croak );
 
 sub chained_uri {
 	my ( $c, $controller, $action_for, @ca ) = @_;
 	my $control = $c->controller($controller);
 
-	die "Catalyst::Plugin::ChainedURI can't get controller ".$controller if !$control;
+	croak "Catalyst::Plugin::ChainedURI can't get controller ".$controller if !$control;
 	
 	my $action = $control->action_for($action_for);
 
-	die "Catalyst::Plugin::ChainedURI can't get action ".$action_for." on controller ".$controller if !$action;
-	
-	die "Catalyst::Plugin::ChainedURI needs Chained action as target (given: ".$controller."->".$action_for.")" if !$action->attributes->{Chained};
-	die "Catalyst::Plugin::ChainedURI needs the end of the chain as target (given: ".$controller."->".$action_for.")" if $action->attributes->{CaptureArgs};
+	croak "Catalyst::Plugin::ChainedURI can't get action ".$action_for." on controller ".$controller if !$action;
+	croak "Catalyst::Plugin::ChainedURI needs Chained action as target (given: ".$controller."->".$action_for.")" if !$action->attributes->{Chained};
+	croak "Catalyst::Plugin::ChainedURI needs the end of the chain as target (given: ".$controller."->".$action_for.")" if $action->attributes->{CaptureArgs};
 
 	$c->log->debug('ChainedURI '.$controller.'->'.$action_for.' '.join(',',map { defined $_ ? $_ : "" } @ca)) if $c->debug;
 
@@ -28,11 +28,11 @@ sub chained_uri {
 			for (@{$curr->attributes->{StashArg}}) {
 				if ($_) {
 					$cc--;
-					die "Catalyst::Plugin::ChainedURI: too many StashArg attributes on given action '".$action."'" if $cc < 0;
+					croak "Catalyst::Plugin::ChainedURI: too many StashArg attributes on given action '".$action."'" if $cc < 0;
 					push @captures, $c->stash->{$_};
 				}
 			}
-			die "Catalyst::Plugin::ChainedURI: the given action '".$action."' needs more captures" if @ca < $cc; # not enough captures
+			croak "Catalyst::Plugin::ChainedURI: the given action '".$action."' needs more captures" if @ca < $cc; # not enough captures
 			if ($cc) {
 				my @splice = splice(@ca, 0, $cc);
 				unshift(@captures, @splice);
@@ -46,6 +46,18 @@ sub chained_uri {
 	@captures = reverse @captures;
 	
 	return $c->uri_for_action($action,\@captures,@ca);
+}
+
+sub current_chained_uri {
+  my ( $c ) = @_;
+  my $base = (ref $c);
+  my $cbase = $base.'::Controller::';
+  my $class = $c->action->class;
+  $class =~ s/$cbase//g;
+  my $name = $c->action->name;
+  my @captures = @{$c->req->captures};
+  my @arguments = @{$c->req->arguments};
+  return $class, $name, @captures, @arguments;
 }
 
 =head1 SYNOPSIS
@@ -65,6 +77,7 @@ sub chained_uri {
   # Somewhere
 
   my $uri = $c->chained_uri('Root','final',$othercapture_capturearg,$final_arg);
+  my @current_chained_uri = $c->current_chained_uri; # current list
 
   # Usage hints
   
@@ -73,6 +86,9 @@ sub chained_uri {
 =head1 DESCRIPTION
 
 B<TODO>
+
+B<Warning> The function I<current_chained_uri> doesn't work before you reach
+your target action.
 
 =head1 SUPPORT
 
