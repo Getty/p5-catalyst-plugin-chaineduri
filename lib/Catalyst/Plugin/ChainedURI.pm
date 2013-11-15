@@ -5,7 +5,7 @@ use warnings;
 use Carp qw( croak );
 
 sub chained_uri {
-	my ( $c, $controller, $action_for, @ca ) = @_;
+	my ( $c, $controller, $action_for, @extra ) = @_;
 	my $control = $c->controller($controller);
 
 	croak "Catalyst::Plugin::ChainedURI can't get controller ".$controller if !$control;
@@ -16,7 +16,23 @@ sub chained_uri {
 	croak "Catalyst::Plugin::ChainedURI needs Chained action as target (given: ".$controller."->".$action_for.")" if !$action->attributes->{Chained};
 	croak "Catalyst::Plugin::ChainedURI needs the end of the chain as target (given: ".$controller."->".$action_for.")" if $action->attributes->{CaptureArgs};
 
-	$c->log->debug('ChainedURI '.$controller.'->'.$action_for.' '.join(',',map { defined $_ ? $_ : "" } @ca)) if $c->debug;
+	my @ca;
+	my %params;
+	for my $arg (@extra) {
+		if (ref $arg eq 'HASH') {
+			$params{$_} = $arg->{$_} for keys %{$arg};
+		} else {
+			push @ca, $arg;
+		}
+	}
+
+	$c->log->debug(
+		'ChainedURI '.$controller.'->'.$action_for.' '.
+		join(',',map { defined $_ ? $_ : "" } @ca).
+		( %params
+			? '{ '.join(' ',map { $_.'='.$params{$_} } keys %params).' }'
+			: '' )
+	) if $c->log->is_debug;
 
 	my @captures;
 	my $curr = $action;
@@ -45,43 +61,51 @@ sub chained_uri {
 	
 	@captures = reverse @captures;
 	
-	return $c->uri_for_action($action,\@captures,@ca);
+	return $c->uri_for_action($action,\@captures,@ca,%params ? ({ %params }) : ());
 }
 
 sub current_chained_uri {
-  my ( $c ) = @_;
-  my $base = (ref $c);
-  my $cbase = $base.'::Controller::';
-  my $class = $c->action->class;
-  $class =~ s/$cbase//g;
-  my $name = $c->action->name;
-  my @captures = @{$c->req->captures};
-  my @arguments = @{$c->req->arguments};
-  return $class, $name, @captures, @arguments;
+	my ( $c, @extra_args ) = @_;
+	my $base = (ref $c);
+	my $cbase = $base.'::Controller::';
+	my $class = $c->action->class;
+	$class =~ s/$cbase//g;
+	my $name = $c->action->name;
+	my @captures = @{$c->req->captures};
+	my @arguments = @{$c->req->arguments};
+	my %params = %{$c->req->query_parameters};
+	for my $arg (@extra_args) {
+		if (ref $arg eq 'HASH') {
+			$params{$_} = $arg->{$_} for keys %{$arg};
+		} else {
+			push @arguments, $arg;
+		}
+	}
+	return $class, $name, @captures, @arguments, %params ? ({ %params }) : ();
 }
 
 =head1 SYNOPSIS
 
-  # In the Root controller, for example:
+	# In the Root controller, for example:
 
-  sub base :Chained('/') :PathPart('') :CaptureArgs(1) :StashArg('language') {
-    my ( $c, $language ) = @_;
-    ...
-    $c->stash->{language} = $language;
-    ...
-  }
-  
-  sub othercapture :Chained('base') :PathPart('') :CaptureArgs(1) { ... }
-  sub final :Chained('othercapture') :PathPart('') :Args(1) { ... }
-  
-  # Somewhere
+	sub base :Chained('/') :PathPart('') :CaptureArgs(1) :StashArg('language') {
+		my ( $c, $language ) = @_;
+		...
+		$c->stash->{language} = $language;
+		...
+	}
+	
+	sub othercapture :Chained('base') :PathPart('') :CaptureArgs(1) { ... }
+	sub final :Chained('othercapture') :PathPart('') :Args(1) { ... }
+	
+	# Somewhere
 
-  my $uri = $c->chained_uri('Root','final',$othercapture_capturearg,$final_arg);
-  my @current_chained_uri = $c->current_chained_uri; # current list
+	my $uri = $c->chained_uri('Root','final',$othercapture_capturearg,$final_arg);
+	my @current_chained_uri = $c->current_chained_uri; # current list
 
-  # Usage hints
-  
-  $c->stash->{u} = sub { $c->chained_uri(@_) }; # for getting [% u(...) %]
+	# Usage hints
+	
+	$c->stash->{u} = sub { $c->chained_uri(@_) }; # for getting [% u(...) %]
 
 =head1 DESCRIPTION
 
@@ -94,16 +118,16 @@ your target action.
 
 IRC
 
-  Join #catalyst on irc.perl.org and ask for Getty.
+	Join #catalyst on irc.perl.org and ask for Getty.
 
 Repository
 
-  http://github.com/Getty/p5-catalyst-plugin-chaineduri
-  Pull request and additional contributors are welcome
+	http://github.com/Getty/p5-catalyst-plugin-chaineduri
+	Pull request and additional contributors are welcome
  
 Issue Tracker
 
-  http://github.com/Getty/p5-catalyst-plugin-chaineduri/issues
+	http://github.com/Getty/p5-catalyst-plugin-chaineduri/issues
 
 =cut
 
