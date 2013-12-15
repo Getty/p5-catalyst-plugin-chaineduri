@@ -32,7 +32,7 @@ sub chained_uri {
 		( %params
 			? '{ '.join(' ',map { $_.'='.$params{$_} } keys %params).' }'
 			: '' )
-	) if $c->log->is_debug;
+	) if $c->debug and $c->log->is_debug;
 
 	my @captures;
 	my $curr = $action;
