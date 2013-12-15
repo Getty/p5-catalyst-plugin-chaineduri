@@ -30,7 +30,7 @@ sub chained_uri {
 		'ChainedURI '.$controller.'->'.$action_for.' '.
 		join(',',map { defined $_ ? $_ : "" } @ca).
 		( %params
-			? '{ '.join(' ',map { $_.'='.$params{$_} } keys %params).' }'
+			? ' { '.join(' ',map { $_.'='.$params{$_} } keys %params).' }'
 			: '' )
 	) if $c->debug and $c->log->is_debug;
 
